@@ -71,6 +71,8 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
+        self.state = "nomal" #コウカトンの初期状態をノーマルに設定
+        self.hyper_life = -1 #無敵状態の時間を-1に初期設定する
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -80,6 +82,13 @@ class Bird(pg.sprite.Sprite):
         """
         self.image = pg.transform.rotozoom(pg.image.load(f"ex04/fig/{num}.png"), 0, 2.0)
         screen.blit(self.image, self.rect)
+
+    def change_state(self, state:str, hyper_life:int):
+        """コウカトンの状態を切り替えるメソッド
+        引数1 state:コウカトンの状態(normal or hyper)
+        引数２ hyper:ハイパーモードの発動時間"""
+        self.state = state
+        self.hyper_life = hyper_life
 
     def update(self, key_lst: list[bool], screen: pg.Surface):
         """
@@ -100,6 +109,13 @@ class Bird(pg.sprite.Sprite):
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
+
+        if self.state == "hyper":#コウカトンがハイパー状態なら
+            self.image = pg.transform.laplacian(self.image)#透明になる（画像変わる）
+            self.hyper_life -= 1 #無敵モードの時間を1フレームごとに500から1引いていく
+        if self.hyper_life < 0: #無敵モードに時間が0以下になったら
+            self.change_state("nomal",-1) #ノーマルモードに戻す
+
         screen.blit(self.image, self.rect)
     
     def get_direction(self) -> tuple[int, int]:
@@ -243,11 +259,11 @@ class Score:
 
     def score_up(self, add):
         self.score += add
+        
 
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
-
 
 def main():
     pg.display.set_caption("真！こうかとん無双")
@@ -270,6 +286,11 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT:
+                if  score.score >= 100:
+                    bird.change_state("hyper",500) #コウカトンの状態をハイパーにする
+                    score.score -= 100 # スコアを１００消費する
+                 
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -289,12 +310,19 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
-        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
-            bird.change_img(8, screen) # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+        for bomb in pg.sprite.spritecollide(bird, bombs, True):
+            if bird.state == "hyper":
+                exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+                score.score_up(1)
+
+            else:#nomalモードの時
+                bird.change_img(8, screen) # こうかとん悲しみエフェクト
+                score.update(screen)
+                pg.display.update()
+                time.sleep(2)
+                return
+        
+        
 
         bird.update(key_lst, screen)
         beams.update()
