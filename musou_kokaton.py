@@ -311,6 +311,32 @@ class Score:
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+
+    def get_score(self): # int型のスコアを返す関数
+        return int(self.score)
+
+class Gravity(pg.sprite.Sprite):
+    """
+    追加機能５の重力球に関するクラス
+    こうかとんを中心に重力球を発生させる
+    """
+    def __init__(self, bird, size, life):
+        super().__init__()
+        RGBA = (0, 0, 0, 100) # 重力球の色を透過度100の黒に設定
+        self.image = pg.Surface((2*size, 2*size), pg.SRCALPHA) # pg.SRCALPHAでSurfaceを透過に対応させる
+        self.rect = pg.draw.circle(self.image, RGBA, (size, size), size) # 新しく作ったself.imageというSurfaceの(size,size)の位置に円を生成
+        self.rect.center = bird.rect.center # 重力球の中心をbirdの中心に設定
+        self.image.set_colorkey((255,255,255)) # 黒を透過する
+        self.life = life
+
+    def update(self): # 重力球のlifeを１ずつ減算し、0未満になったらkill()
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -322,6 +348,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    gravities = pg.sprite.Group() # Gravityグループを追加する
     shields = pg.sprite.Group()
 
     tmr = 0
@@ -338,11 +365,19 @@ def main():
                 beams.add(NeoBeam(bird, 5).gen_beams())     
                 beams.add(Beam(bird))
 
+
+            if event.type == pg.KEYDOWN and event.key == pg.K_TAB \
+                and score.get_score() > 50\
+                and len(gravities) == 0: # TABキーを押している　かつ　スコアが50より大きい　かつ　gravitiesグループに他にgravityインスタンスがない
+                score.score_up(-50)
+                gravities.add(Gravity(bird, 200, 500)) # size（半径）を200、life（発動時間）を500に設定したGravityをgravitiesグループに追加
+
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT:
                 if  score.score >= 100:
                     bird.change_state("hyper",500) #コウカトンの状態をハイパーにする
                     score.score -= 100 # スコアを１００消費する
                  
+
 
             if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK and len(shields) == 0:
                 if score.score > 50:
@@ -372,6 +407,21 @@ def main():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
 
+
+        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
+            bird.change_img(8, screen) # こうかとん悲しみエフェクト
+            score.update(screen)
+            pg.display.update()
+            time.sleep(2)
+            return
+        
+        for bomb in pg.sprite.groupcollide(bombs, gravities, True, False).keys(): # bombとgravitiesの衝突判定。bombのみ消える
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1) # 1点アップ
+    
+        gravities.update()
+        gravities.draw(screen)
+
         for bomb in pg.sprite.spritecollide(bird, bombs, True):
             if bird.state == "hyper":
                 exps.add(Explosion(bomb, 50))  # 爆発エフェクト
@@ -386,6 +436,7 @@ def main():
         
         
 
+
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -398,6 +449,7 @@ def main():
         shields.update()
         shields.draw(screen)
         score.update(screen)
+        
         pg.display.update()
         tmr += 1
         clock.tick(50)
