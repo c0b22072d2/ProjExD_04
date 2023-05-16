@@ -97,6 +97,12 @@ class Bird(pg.sprite.Sprite):
         引数1 key_lst：押下キーの真理値リスト
         引数2 screen：画面Surface
         """
+        if key_lst[pg.K_LSHIFT]:    #追加機能１　高速化
+            self.speed = 20
+        else:
+            self.speed = 10
+
+
         sum_mv = [0, 0]
         for k, mv in __class__.delta.items():
             if key_lst[k]:
@@ -118,7 +124,7 @@ class Bird(pg.sprite.Sprite):
             self.change_state("nomal",-1) #ノーマルモードに戻す
 
         screen.blit(self.image, self.rect)
-    
+
     def get_direction(self) -> tuple[int, int]:
         return self.dire
     
@@ -345,16 +351,19 @@ def main():
 
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
-    beams = pg.sprite.Group()
-    exps = pg.sprite.Group()
-    emys = pg.sprite.Group()
+
+    beams = pg.sprite.Group()        
+    exps = pg.sprite.Group()         #爆発のグループ
+    emys = pg.sprite.Group()         #敵機のグループ
     gravities = pg.sprite.Group() # Gravityグループを追加する
+
     shields = pg.sprite.Group()
+ 
 
     tmr = 0
     clock = pg.time.Clock()
     while True:
-        key_lst = pg.key.get_pressed()
+        key_lst = pg.key.get_pressed()            
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
