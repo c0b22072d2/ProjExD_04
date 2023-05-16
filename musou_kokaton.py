@@ -416,13 +416,6 @@ def main():
             score.score_up(1)  # 1点アップ
 
 
-        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
-            bird.change_img(8, screen) # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
-        
         for bomb in pg.sprite.groupcollide(bombs, gravities, True, False).keys(): # bombとgravitiesの衝突判定。bombのみ消える
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1) # 1点アップ
