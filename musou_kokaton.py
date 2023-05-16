@@ -6,9 +6,8 @@ import time
 import pygame as pg
 
 
-WIDTH = 1200  # ゲームウィンドウの幅
-HEIGHT = 600  # ゲームウィンドウの高さ
-HEIGHT = 500  # ゲームウィンドウの高さ
+WIDTH = 1600  # ゲームウィンドウの幅
+HEIGHT = 900  # ゲームウィンドウの高さ
 
 
 def check_bound(obj: pg.Rect) -> tuple[bool, bool]:
